@@ -55,6 +55,8 @@ ioc（inversion of control ）是一种设计思想，将本来由程序手动�
 
 ![image-20240911130854019](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240911130854019.png)
 
+![image-20240913160059732](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240913160059732.png)
+
 ioc容器实际上是一个Map集合，在使用时我们不用考虑bean的各种依赖关系，当我们配置好之后，在使用bean时直接注入即可使用，大大简化了开发，提高了开发效率，不需要考虑对象是如何被创建出来的
 
 #### 什么是Bean
@@ -62,12 +64,21 @@ ioc容器实际上是一个Map集合，在使用时我们不用考虑bean的各�
 Bean就是被ioc所管理的对象，我们需要告诉 IoC 容器帮助我们管理哪些对象，这个是通过配置元数据来定义的。配置元数据可以是 XML 文件、注解或者 Java 配置类。
 
 ```xml
+//注册bean
 <!-- Constructor-arg with 'value' attribute -->
 <bean id="..." class="...">
    <constructor-arg value="..."/>
 </bean>
-​
+//还有一个前置加载bean的概念，当一个beanA依赖beanB的时候，我们可以让他先加载beanB，通过depends-on来设定
+<bean id="beanA" class="..."  depends-on="beanB	" />
+<bean id="beanB" class="..."/>	
 ```
+
+#### **Bean依赖注入方式**
+
+- setter方法注入
+- 构造器注入
+- 注解自动装配
 
 ![image-20240911142722581](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240911142722581.png)
 
@@ -107,6 +118,8 @@ public OneService getService(status) {
     }
 }
 ```
+
+#### Bean自动装配
 
 #### 注入bean的注解有哪些
 
@@ -418,11 +431,13 @@ Bean的生命周期
 
 
 
-**AOP**
+#### **AOP**
 
 将一些与业务逻辑无关,但又为业务所用的代码封装,用于减少重复代码,减少了代码的耦合度
 
-aop是基于动态代理实现的,如果要代理的对象，实现了某个接口，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的子类来作为代理
+aop是基于动态代理实现的,如果要代理的对象，实现了某个接口，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的子类来作为代理.
+
+简而言之，AOP就是在不改变原有代码的基础上进行增强（在原来的代码执行操作前后进行附加操作），也可以理解为所说的代理模式，本质上都是对代码进行增强，而且AOP是基于动态代理实现的。
 
 ![image-20240912131754896](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240912131754896.png)
 
@@ -436,7 +451,60 @@ AOP切面编程需要先了解下面几个概念
 - **切面**:切入点和通知
 - **织入**:将通知应用到目标对象,进而生成代理对象的过程
 
-Spring MVC
+![image-20240918104533796](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240918104533796.png)
+
+##### xml文档配置形式
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+</beans>
+```
+
+##### 使用接口来实现AOP
+
+需要实现Advice接口（有时间再回来写，我没用过这种啊）
+
+##### 使用注解来实现AOP
+
+先要在主启动类上添加注解(@EnableAspectJAutoProxy)开启AOP支持
+
+```java
+@EnableAspectJAutoProxy
+@ComponentScan("org.example.entity")
+@Configuration
+public class MainConfiguration {
+}
+```
+
+在增强类的类名上加@Aspect注解，并且通过@Component注解将该类注册成一个Bean，在类中可以写增强的方法并将该方法加入**切点**（也就是被增强的连接点，在通俗一点就是被增强的这个方法，目标对象所属类中的所有方法都叫连接点）。当我们想获取切入点信息时，可以通过JoinPoint 来获取
+
+```java
+@Aspect
+@Component
+public class TestAop{
+    
+    @Before("execution(* org.example.entity.Student.study())")//这里是一个el表达式
+    public void beforeOp(){
+        System.out.println("我是前置操作")
+    }
+    
+    //这是一个获取接入点信息的测试方法
+    @Before("execution(* org.example.entity.Student.study())")//这里是一个el表达式
+    public void beforeOp(JionPoint jionPoint){
+        System.out.println("参数："+Arrays.toString(point.getArgs()))
+        System.out.println("我是前置操作")
+    }
+}
+```
+
+
+
+#### Spring MVC
 
 MVC: model、view、controller
 
@@ -500,6 +568,8 @@ public class CircularDependencyB {
 }
 ```
 
+##### 三级缓存
+
 在Spring中 是采用三级缓存来解决循环依赖这个问题的：
 
 事实上三级缓存就是三个存放不同时期Bean的Map集合，源码如下:
@@ -528,6 +598,35 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(1
 1. 先去singletonObjects 一级缓存中取bean，如果存在就返回
 2. 如果不存在或对象正在创建中则去二级缓存earlySingletonObjects中取
 3. 如果还不存在，则去三级缓存singletonFactories中获取，然后存入二级缓存中，在三级缓存中删除该bean
+
+```java
+@Nullable
+    protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+        Object singletonObject = this.singletonObjects.get(beanName);
+        if (singletonObject == null && this.isSingletonCurrentlyInCreation(beanName)) {
+            singletonObject = this.earlySingletonObjects.get(beanName);
+            if (singletonObject == null && allowEarlyReference) {
+                synchronized(this.singletonObjects) {
+                    singletonObject = this.singletonObjects.get(beanName);
+                    if (singletonObject == null) {
+                        singletonObject = this.earlySingletonObjects.get(beanName);
+                        if (singletonObject == null) {
+                            ObjectFactory<?> singletonFactory = (ObjectFactory)this.singletonFactories.get(beanName);
+                            if (singletonFactory != null) {
+                                singletonObject = singletonFactory.getObject();
+                                this.earlySingletonObjects.put(beanName, singletonObject);
+                                this.singletonFactories.remove(beanName);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return singletonObject;
+    }
+```
+
+
 
 > Spring在创建Bean时，如果允许循环依赖，Spring就会将刚实例化完成但是属性还没初始化完的Bean对象给提前暴露出去，通过addSingletonFactory方法向三级缓存中添加一个objectFactory对象
 >
@@ -568,9 +667,9 @@ public class A {
 
 当加载A时，懒加载会生成一个B的代理对象注入A中，之后开始执行 B 的实例化、初始化，在注入 B 中的 A 属性时，此时 A 已经创建完毕了，就可以将 A 给注入进去。
 
-**Spring事务**
+####  Spring事务
 
-
+#### Spring任务调度
 
 
 
