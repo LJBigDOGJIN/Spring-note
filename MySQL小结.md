@@ -117,17 +117,17 @@ NULL会影响聚合函数的使用，SUM、AVG、MIN、MAX不会统计null值，
 
 ![image-20240906130325665](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240906130325665.png)
 
-连接器：身份认证等登录相关（登录数据库时）
+**连接器**：身份认证等登录相关（登录数据库时）
 
-查询缓存器：会存储查询的缓存，sql执行时会先来这查缓存（mysql8.0以后被删除）
+**查询缓存器**：会存储查询的缓存，sql执行时会先来这查缓存（mysql8.0以后被删除）
 
-分析器：分析sql的语法，检验是否正确
+**分析器**：分析sql的语法，检验是否正确
 
-优化器：按照mysql认为的最优方案去执行
+**优化器**：按照mysql认为的最优方案去执行
 
-执行器：用来执行sql，但在执行之前会查看是否具有权限
+**执行器**：用来执行sql，但在执行之前会查看是否具有权限
 
-存储引擎：负责数据的存储和读取
+**存储引擎**：负责数据的存储和读取
 
 #### MYSQL存储引擎
 
@@ -275,6 +275,90 @@ mysql> EXPLAIN SELECT `score`,`name` FROM `cus_order` ORDER BY `score` DESC;
 ```
 
 ![image-20240909165814170](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240909165814170.png)
+
+##### sql优化
+
+当我们查询数据库数据时，如果写了一些比较复杂的sql，要是处理不当会导致我们的查询效率非常慢，此时我们就需要来对sql语句进行一定的优化。下面就来谈谈如何对sql进行优化。
+
+**首先考虑语句**：
+
+1.查询时 尽量避免使用select * 来查询，要使用具体的查询字段 ，
+
+```sql
+-- 比如使用 
+select name ,age,sex from user;
+-- 而不是
+select * from user;
+```
+
+2.联表查询时，要使用小表来驱动大表（意思就是用数据量小的表来联结数据量大的表）
+
+> 什么是驱动表，什么是被驱动表，这两个概念在查询中有时容易让人搞混，有下面几种情况，大家需要了解。
+>
+> 1. 当连接查询没有where条件时
+>    1. left join 前面的表是驱动表，后面的表是被驱动表
+>    2. right join 后面的表是驱动表，前面的表是被驱动表
+>    3. inner join / join 会自动选择表数据比较少的作为驱动表
+>    4. straight_join(≈join) 直接选择左边的表作为驱动表（语义上与join类似，但去除了join自动选择小表作为驱动表的特性）
+> 2. 当连接查询有where条件时，带where条件的表是驱动表，否则是被驱动表
+
+```sql
+## 假设现在有两张表 t1 和 t2 ，t2的数据量要大于t1
+select name,age ,sex,id from t1 left jion t2 where t1.id=t2.id
+```
+
+3.当使用条件查询时，条件当中使用函数也会降低整条sql的查询效率
+
+4.谨慎使用union关键字，因为union会对两个结果集进行去重操作，比较耗时效率低下，要合并的话使用union all不会去重，效率相对较高
+
+5.还有一些 in 、or等使用时需要注意
+
+6.group by 优化 :
+
+- 如果对分组后的结果没有排序要求，建议在group by 后面加上order by null 因为group by会默认排序。
+- 尽量让group by过程用上表的索引，确认方法是explain结果里没有Using temporary 和 Using filesort。
+- 使用where 代替having 因为 having是在分组之后才进行筛选，如果where能够提前筛选则会降低开销。
+
+7.区分in和exist: 主要是造成驱动顺序的改变，如果是exist，则以外层表为驱动表，先访问外层表。如果是in则是以内层表为驱动表，会先执行子查询。综上所述，exist适合外表小内表大的情况，而in适合内表小外表大的情况。
+
+```sql
+select * from 表A where id in (select id from 表B)
+ ## 上面的语句相当于：
+select * from 表A where exists(select * from 表B where 表B.id=表A.id)
+```
+
+
+
+**索引**
+
+1.条件查询时 where 后对索引列进行操作时，会导致索引失效。
+
+2.字符串类型必须要带引号才行，否则会发生隐式类型转化导致索引失效
+
+3.查询中使用范围筛选时，范围条件右边的列不会走索引
+
+```sql
+## 其中username, age, phone都有索引，只有username和age会生效，phone的索引没有用到。
+select * from user where username='123' and age>20 and phone='1390012345',
+```
+
+4.尽量使用覆盖索引来减少回表查询。
+
+5.在使用or时，要保证or前后的两个条件都有索引，否则会导致索引失效
+
+6.在模糊查询时，使用前模糊查询会导致索引失效
+
+```sql
+
+## 这种情况会导致索引失效
+select name,age from user where name like '%嗷嗷'
+```
+
+7.SQL 性能优化 explain 中的 type：至少要达到 range 级别，要求是 ref 级别，如果可以是 consts 最好。
+
+> consts：单表中最多只有一个匹配行（主键或者唯一索引），在优化阶段即可读取到数据。ref：使用普通的索引 range：对索引进行范围检索。当 type=index 时，索引物理文件全扫，速度非常慢。
+
+
 
 #### 数据库语法基础复习
 
