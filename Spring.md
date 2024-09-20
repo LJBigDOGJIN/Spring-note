@@ -6,11 +6,11 @@ spring框架是一款开源的轻量级java开发框架，由多个模块组成�
 
 #### Spring的主要模块
 
-![image-20240910194935923](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240910194935923.png)
+![image-20240910194935923](D:\TXT\图片文件\image-20240910194935923.png)
 
 各个模块的依赖关系
 
-![image-20240910195328585](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240910195328585.png)
+![image-20240910195328585](D:\TXT\图片文件\image-20240910195328585.png)
 
 **Core Container**
 
@@ -506,7 +506,7 @@ public class TestAop{
 
 #### Spring MVC
 
-MVC: model、view、controller
+MVC: model（业务模型，用来封装传递数据的实体类）、view（用户看的前端页面）、controller（控制器，servlet处理请求返回响应）
 
 ![image-20240912134955510](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240912134955510.png)
 
@@ -530,13 +530,168 @@ View：视图
 
 ![image-20240912155234458](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240912155234458.png)
 
+![image-20240920161041282](D:\TXT\图片文件\image-20240920161041282.png)
+
 1. DispatchServlet：中央处理器在接收到请求后会调用HandlerMapping，根据URL来匹配能处理的Handler
 2. DispatchServlet调用HandlerAdapter执行Handler
 3. handler处理完以后会返回给DispatchServlet一个ModelAndView。
 4. DispatchServlet会根据逻辑View找到实际的View
 5. DispatchServlet把model给view返回前端渲染
 
-Spring中用了哪些设计模式
+##### Spring MVC中的注解
+
+**@RequestMapping**：将请求和处理请求的方法做一个映射关系。
+
+```java
+@Mapping
+public @interface RequestMapping {
+    String name() default "";
+ 
+    @AliasFor("path")
+    String[] value() default {};   
+
+    @AliasFor("value")
+    String[] path() default {};
+
+    RequestMethod[] method() default {};
+
+    String[] params() default {};
+
+    String[] headers() default {};
+
+    String[] consumes() default {};
+
+    String[] produces() default {};
+}
+```
+
+​	1.请求的路径必须全局唯一，path是一个数组，一个方法可以处理多个请求。该注解也可以加在类上，表示所有该类的地址都统一加了前缀（所以在请求时也需要加上该前缀组成完整的地址）
+
+> path路径上也可以使用通配符：
+>
+> ​	1.`?`:表示匹配一个字符：/index/A?  或者 /index/?A
+>
+> ​	2.`*`:表示匹配0-n个字符:/index/*
+>
+> ​	3.`**`:表示当前目录或基于当前目录的多级目录，比如`@RequestMapping("/index/**")`可以匹配/index、/index/xxx等。
+
+​	2.**method**方法来表示请求方式
+
+```sql	
+//一般常用get和post
+//也可以直接使用@GetMapping 和 @PostMapping
+@RequestMapping(value = "/index", method = RequestMethod.POST)
+public ModelAndView index(){
+    return new ModelAndView("index");
+}
+```
+
+​	3.也可以通过**params**参数来设置请求参数
+
+params参数可以设置哪些参数是必须携带的，以及某些参数的值
+
+```java
+@RequestMapping(value = "/index", params = {"username", "password"})
+public ModelAndView index(){
+    return new ModelAndView("index");
+}
+//加感叹号表示不允许携带此参数
+@RequestMapping(value = "/index", params = {"!username", "password"})
+public ModelAndView index(){
+    return new ModelAndView("index");
+}
+//表示username的值不能为test，password的值必须为123
+@RequestMapping(value = "/index", params = {"username!=test", "password=123"})
+public ModelAndView index(){
+    return new ModelAndView("index");
+}
+```
+
+**@RequestParam**
+
+可以接收参数，默认是接收的参数必须要携带，也可以通过require=false属性来设置。注意，这里RequestParam的参数名称是用来对应请求的参数，必须要和请求的参数名称一样，但是当我们方法中的形参如果和请求中的参数名称相同时，注解中的参数名也可以省略不写。
+
+```java
+//也能通过@RequestParam注解来设定默认值，即@RequestParam(value="username" ,require="false",defaultValue="aaa")
+@RequestMapping(value = "/index")
+public ModelAndView index(@RequestParam(value="username" ,require="false" ) String username){
+    System.out.println("接受到请求参数："+username);
+    return new ModelAndView("index");
+}
+```
+
+**@RequestHeader**:获取请求头参数
+
+**@CookieValue和@SessionAttrbutie**：这两个注解和@RequestParam类似，可以分别获取到cookie和session中的参数值
+
+**重定向和转发**（直接看代码，转发就直接用forward，重定向就用redirect）
+
+```sql
+@RequestMapping("/index")
+public String index(){
+    return "forward:home";
+}
+
+@RequestMapping("/home")
+public String home(){
+    return "home";
+}
+```
+
+**Bean的web作用域**
+
+Bean的作用域在Bean那块讲过了，但是此处还要再提一下，一般来说常用的作用域就两种：singleton和prototype
+
+不过在web应用中还有session ，request等周期分别对应一个session会话内、一次请求内有效
+
+##### 拦截器
+
+拦截器和过滤器差不多，其主要区别就是作用时机不同，过滤器作用在servlet之前，而拦截器作用在servlet和RequestMapping之间，相当玉请求到达DispatchServlet之后和到达Controller方法之前的时机
+
+![image-20240920145618091](D:\TXT\图片文件\image-20240920145618091.png)
+
+###### 如何创建拦截器
+
+首先创建一个类继承HandlerInterceptor接口,里面有几个参数分别对应请求处理前后，我们可以在对应的位置写上我们想要进行操作的逻辑。比如常见的登录校验。
+
+```java
+public class MainInterceptor implements HandlerInterceptor {
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("我是处理之前！");
+        return true;   //只有返回true才会继续，否则直接结束
+    }
+
+    //如果在controller执行业务逻辑时出现异常，则该方法不会被执行，而是直接执行afterCompletion方法
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        System.out.println("我是处理之后！");
+    }
+
+    //整个流程结束之后执行该方法
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+      	//在DispatcherServlet完全处理完请求后被调用
+        System.out.println("我是完成之后！");
+    }
+}
+```
+
+下一步就是在webConfig配置类中注册该监听器
+
+```java
+@Override
+public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(new MainInterceptor())
+      .addPathPatterns("/**")    //添加拦截器的匹配路径，只要匹配一律拦截
+      .excludePathPatterns("/home");   //拦截器不进行拦截的路径
+}
+```
+
+拦截器可以配置多个，组成拦截器链（应该是不同的拦截业务写到不同的拦截器里）所有的拦截器都要在web配置类里面注册，并且拦截器链的执行顺序和代码中的注册顺序一样。但是完成后的afterCompletion是倒序着执行的
+
+#### Spring中用了哪些设计模式
 
 我知道的：
 
@@ -560,7 +715,7 @@ public class CircularDependencyA {
     @Autowired
     private CircularDependencyB circB;
 }
-​
+
 @Component
 public class CircularDependencyB {
     @Autowired
