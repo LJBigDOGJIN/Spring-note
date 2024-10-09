@@ -1,6 +1,107 @@
-hashMap回顾笔记
+GitHub：
 
-#### 集合
+### 集合
+
+Collection定义了一些集合类长用的方法
+
+```java
+public interface Collection<E> extends Iterable<E> {
+    //-------这些是查询相关的操作----------
+
+   	//获取当前集合中的元素数量
+    int size();
+
+    //查看当前集合是否为空
+    boolean isEmpty();
+
+    //查询当前集合中是否包含某个元素
+    boolean contains(Object o);
+
+    //返回当前集合的迭代器，我们会在后面介绍
+    Iterator<E> iterator();
+
+    //将集合转换为数组的形式
+    Object[] toArray();
+
+    //支持泛型的数组转换，同上
+    <T> T[] toArray(T[] a);
+
+    //-------这些是修改相关的操作----------
+
+    //向集合中添加元素，不同的集合类具体实现可能会对插入的元素有要求，
+  	//这个操作并不是一定会添加成功，所以添加成功返回true，否则返回false
+    boolean add(E e);
+
+    //从集合中移除某个元素，同样的，移除成功返回true，否则false
+    boolean remove(Object o);
+
+
+    //-------这些是批量执行的操作----------
+
+    //查询当前集合是否包含给定集合中所有的元素
+  	//从数学角度来说，就是看给定集合是不是当前集合的子集
+    boolean containsAll(Collection<?> c);
+
+    //添加给定集合中所有的元素
+  	//从数学角度来说，就是将当前集合变成当前集合与给定集合的并集
+  	//添加成功返回true，否则返回false
+    boolean addAll(Collection<? extends E> c);
+
+    //移除给定集合中出现的所有元素，如果某个元素在当前集合中不存在，那么忽略这个元素
+  	//从数学角度来说，就是求当前集合与给定集合的差集
+  	//移除成功返回true，否则false
+    boolean removeAll(Collection<?> c);
+
+    //Java8新增方法，根据给定的Predicate条件进行元素移除操作
+    default boolean removeIf(Predicate<? super E> filter) {
+        Objects.requireNonNull(filter);
+        boolean removed = false;
+        final Iterator<E> each = iterator();   //这里用到了迭代器，我们会在后面进行介绍
+        while (each.hasNext()) {
+            if (filter.test(each.next())) {
+                each.remove();
+                removed = true;
+            }
+        }
+        return removed;
+    }
+
+    //只保留当前集合中在给定集合中出现的元素，其他元素一律移除
+  	//从数学角度来说，就是求当前集合与给定集合的交集
+  	//移除成功返回true，否则false
+    boolean retainAll(Collection<?> c);
+
+    //清空整个集合，删除所有元素
+    void clear();
+
+
+    //-------这些是比较以及哈希计算相关的操作----------
+
+    //判断两个集合是否相等
+    boolean equals(Object o);
+
+    //计算当前整个集合对象的哈希值
+    int hashCode();
+
+    //与迭代器作用相同，但是是并行执行的，我们会在下一章多线程部分中进行介绍
+    @Override
+    default Spliterator<E> spliterator() {
+        return Spliterators.spliterator(this, 0);
+    }
+
+    //生成当前集合的流，我们会在后面进行讲解
+    default Stream<E> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+
+    //生成当前集合的并行流，我们会在下一章多线程部分中进行介绍
+    default Stream<E> parallelStream() {
+        return StreamSupport.stream(spliterator(), true);
+    }
+}
+```
+
+
 
 java中集合有 ：List、Set和Map
 
@@ -19,6 +120,188 @@ Set：HashSet、TreeSet
 Map：常见的有HasMap、TreeMap，LinkedHashMap
 
 HashMap重点：HashMap扩容机制，1.7和1.8的区别，扰动函数等
+
+#### List集合
+
+```java
+//List是一个有序的集合类，每个元素都有一个自己的下标位置
+//List中可插入重复元素
+//针对于这些特性，扩展了Collection接口中一些额外的操作
+public interface List<E> extends Collection<E> {
+    ...
+   	
+    //将给定集合中所有元素插入到当前结合的给定位置上（后面的元素就被挤到后面去了，跟我们之前顺序表的插入是一样的）
+    boolean addAll(int index, Collection<? extends E> c);
+
+    ...
+
+   	//Java 8新增方法，可以对列表中每个元素都进行处理，并将元素替换为处理之后的结果
+    default void replaceAll(UnaryOperator<E> operator) {
+        Objects.requireNonNull(operator);
+        final ListIterator<E> li = this.listIterator();  //这里同样用到了迭代器
+        while (li.hasNext()) {
+            li.set(operator.apply(li.next()));
+        }
+    }
+
+    //对当前集合按照给定的规则进行排序操作，这里同样只需要一个Comparator就行了
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    default void sort(Comparator<? super E> c) {
+        Object[] a = this.toArray();
+        Arrays.sort(a, (Comparator) c);
+        ListIterator<E> i = this.listIterator();
+        for (Object e : a) {
+            i.next();
+            i.set((E) e);
+        }
+    }
+    ...
+    //-------- 这些是List中独特的位置直接访问操作 --------
+
+   	//获取对应下标位置上的元素
+    E get(int index);
+
+    //直接将对应位置上的元素替换为给定元素
+    E set(int index, E element);
+
+    //在指定位置上插入元素，就跟我们之前的顺序表插入是一样的
+    void add(int index, E element);
+
+    //移除指定位置上的元素
+    E remove(int index);
+
+
+    //------- 这些是List中独特的搜索操作 -------
+
+    //查询某个元素在当前列表中的第一次出现的下标位置
+    int indexOf(Object o);
+
+    //查询某个元素在当前列表中的最后一次出现的下标位置
+    int lastIndexOf(Object o);
+
+
+    //------- 这些是List的专用迭代器 -------
+
+    //迭代器我们会在下一个部分讲解
+    ListIterator<E> listIterator();
+
+    //迭代器我们会在下一个部分讲解
+    ListIterator<E> listIterator(int index);
+
+    //------- 这些是List的特殊转换 -------
+
+    //返回当前集合在指定范围内的子集
+    List<E> subList(int fromIndex, int toIndex);
+
+    ...
+}
+```
+
+##### ArrayList
+
+ArrayList底层是基于数组实现的，有序且允许重复，当删除有重复的元素时，只删除下标最靠前的那一个
+
+```java
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable
+{
+		
+    //默认的数组容量
+    private static final int DEFAULT_CAPACITY = 10;
+
+    ...
+
+    //存放数据的底层数组，这里的transient关键字我们会在后面I/O中介绍用途
+    transient Object[] elementData;
+
+    //记录当前数组元素数的
+    private int size;
+
+   	//这是ArrayList的其中一个构造方法
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity > 0) {
+            this.elementData = new Object[initialCapacity];   //根据初始化大小，创建当前列表
+        } else if (initialCapacity == 0) {
+            this.elementData = EMPTY_ELEMENTDATA;
+        } else {
+            throw new IllegalArgumentException("Illegal Capacity: "+
+                                               initialCapacity);
+        }
+    }
+  
+  	...
+      
+   	public boolean add(E e) {
+        ensureCapacityInternal(size + 1);  // 这里会判断容量是否充足，不充足需要扩容
+        elementData[size++] = e;
+        return true;
+    }
+  	
+  	...
+    
+    //默认的列表最大长度为Integer.MAX_VALUE - 8
+    //JVM的C++实现中，在数组的对象头中有一个_length字段，用于记录数组的长
+    //度，所以这个8就是存了数组_length字段（这个只做了解就行）
+		private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+  	
+  	private void grow(int minCapacity) {
+        int oldCapacity = elementData.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1);   //扩容规则跟我们之前的是一样的，也是1.5倍
+        if (newCapacity - minCapacity < 0)    //要是扩容之后的大小还没最小的大小大，那么直接扩容到最小的大小
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE > 0)   //要是扩容之后比最大的大小还大，需要进行大小限制
+            newCapacity = hugeCapacity(minCapacity);  //调整为限制的大小
+        elementData = Arrays.copyOf(elementData, newCapacity);   //使用copyOf快速将内容拷贝到扩容后的新数组中并设定为新的elementData底层数组
+    }
+}
+```
+
+##### LinkedList
+
+LinkedList是基于双向链表实现的，其基本操作和ArrayList差不多，只是在插入和删除以及查找的效率上存在差异，在使用中需要根据自己的实际需求来选择使用哪一个。不过LinkedList不仅可以当作list来用，也可以当作双端队列来使用。
+
+```java
+public class LinkedList<E>
+    extends AbstractSequentialList<E>
+    implements List<E>, Deque<E>, Cloneable, java.io.Serializable
+{
+    transient int size = 0;
+
+    //引用首结点
+    transient Node<E> first;
+
+    //引用尾结点
+    transient Node<E> last;
+
+    //构造方法，很简单，直接创建就行了
+    public LinkedList() {
+    }
+  
+  	...
+      
+    private static class Node<E> {   //内部使用的结点类
+        E item;
+        Node<E> next;   //不仅保存指向下一个结点的引用，还保存指向上一个结点的引用
+        Node<E> prev;
+
+        Node(Node<E> prev, E element, Node<E> next) {
+            this.item = element;
+            this.next = next;
+            this.prev = prev;
+        }
+    }
+
+    ...
+}
+```
+
+
+
+
+
+
+
+
 
 ​	插入过程：
 
@@ -42,7 +325,7 @@ HashMap重点：HashMap扩容机制，1.7和1.8的区别，扰动函数等
 
   1.8以后采用了更细的锁粒度，链表的每个bucket桶加一把锁（即数组的每一个节点都有一把锁，当对不同节点的链表进行写操作时互不影响。）
 
-#### 常用日期时间类 
+### 常用日期时间类
 
 Calendar 日期类
 
@@ -96,7 +379,7 @@ Date date=sdf.parse(date1);
 
 ![image-20240730193501394](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240730193501394.png)
 
-#### Java对象：
+### Java对象
 
 由三部分组成，对象头、对象实例数据和对齐填充
 
@@ -113,7 +396,7 @@ synchronized锁
 
 
 
-#### 线程
+### 线程
 
 线程状态：
 
@@ -502,7 +785,7 @@ IO流
 
 输出流:outputStream/Writer
 
-#### JVM
+### JVM
 
 jvm区域划分
 
@@ -546,3 +829,188 @@ jvm区域划分
 jdk1.7以后好像有一个叫什么逃逸啥的。就是说一个对象的引用要是没被返回的话且只在这一个方法中使用时，也可以在栈中创建实例。
 
 元空间（方法区）
+
+### 泛型
+
+泛型在数据类型不确定时有重要作用，例如一个商品类Goods中定义了一个value属性（假设这个value有时候是String类型，有时候是int类型，如果我们直接给value定义成int类型则当下一个String类型的值传来时就会报错，之前为了解决这种问题，一般会将value定义成Object类，Object是所有类的父类所以任何类型都能存储）：
+
+```java
+//未改动之前写法
+class Goods{
+    private String name;
+    private int value;
+}
+//改为Object类型的写法
+//但是这种写法在使用时，每次取value值时都需要进行类型转换，
+class Goods{
+    private String name;
+    private Object value;
+}
+Goods good=new Goods();
+good.setValue("热销产品");
+String value=(String)good.getValue();
+// 在进行类型转换时就可能会出现类型转换异常，所以在jdk5的时候就推出了泛型
+```
+
+JDK5以后出现的泛型能够很好的解决上述代码中的每次取值都需要进行类型转换的问题，因为在编译时期就会对类型进行检查。
+
+#### 如何使用泛型
+
+泛型就是在定义时不指定固定的类型，在使用时再去根据需要来指定类型，如下代码是一个使用泛型的例子
+
+##### 泛型类
+
+```java
+public class Score<T> {   //泛型类需要使用<>，我们需要在里面添加1 - N个类型变量
+    String name;
+    String id;
+    T value;   //T会根据使用时提供的类型自动变成对应类型
+
+    public Score(String name, String id, T value) {   //这里T可以是任何类型，但是一旦确定，那么就不能修改了
+        this.name = name;
+        this.id = id;
+        this.value = value;
+    }
+}
+```
+
+使用时指定类型
+
+```java
+Score score=new Score<String>("张三","22","指定类型");
+//假设在类中已经写过了get方法
+//不需要再进行类型转换，取出的值直接就是我们定义时指定的类型
+String value=score.getValue();
+```
+
+在使用泛型时不仅仅可以使用一个泛型，而是可以使用多个，例如：
+
+```java
+Class Test<A,B,C>{
+    private A name;
+    private B age;
+    private C address;
+}
+//使用时指定类型
+Test test=new Test<String,Integer,String>();
+```
+
+> 使用泛型时需要注意，指定泛型的类型时，只能用对象类型，不能用基本数据类型，例如Integer，Long，Double等。
+
+##### 泛型方法
+
+出了类上可以使用泛型外，方法也可以使用泛型
+
+```java
+public static <T> T test(T param);
+private <T> void add(T[] arr, T t){
+    arr[0] = t;
+}
+public static void main(String[] args) {
+    String[] strings = new String[1];
+    Main main = new Main();
+    main.add(strings, "Hello");
+    System.out.println(Arrays.toString(strings));
+}
+```
+
+##### 泛型的界限
+
+泛型的界限分为上界和下界，简而言之，上界就是泛型最大不能超过的类型，下界就是泛型最低不能小于的类型，通常用来对类型做一定的限制，extends关键字用来设定上限，super用来设定下限。
+
+###### 上界
+
+```java
+public class Score<T extends Number> {   //设定类型参数上界，必须是Number或是Number的子类
+    private final String name;
+    private final String id;
+    private final T value;
+
+    public Score(String name, String id, T value) {
+        this.name = name;
+        this.id = id;
+        this.value = value;
+    }
+
+    public T getValue() {
+        return value;
+    }
+}
+```
+
+可以通过如下树的形式来做理解：
+
+![image-20241009124755531](D:\TXT\图片文件\image-20241009124755531.png)
+
+###### 下界
+
+通过super关键字设定，但是如果我们设定了下界，那么他的上界最大还是能到达Object类型的，所以还是会出现最初类型转换的问题
+
+```java
+public class Score<T super Number> {   //设定类型参数下界，
+    private final String name;
+    private final String id;
+    private final T value;
+
+    public Score(String name, String id, T value) {
+        this.name = name;
+        this.id = id;
+        this.value = value;
+    }
+
+    public T getValue() {
+        return value;
+    }
+}
+```
+
+![image-20241009125137036](D:\TXT\图片文件\image-20241009125137036.png)
+
+##### 类型擦除
+
+[^https://blog.csdn.net/qq_43546676/article/details/128790980]:参考文献
+
+
+
+意思是在我们定义泛型的地方，在代码编译的时候会将我们定义的泛型全都改为Object（如果给泛型指定了上界，那么在编译时会改为该上界的类型）
+
+![image-20241009133531198](D:\TXT\图片文件\image-20241009133531198.png)
+
+
+
+带上界的类型擦除
+
+![image-20241009133606121](D:\TXT\图片文件\image-20241009133606121.png)
+
+###### 类型擦除容易引发的问题
+
+> [!NOTE]
+>
+> 先写这么些吧，等看完再捋捋再来写
+
+
+
+### 函数式接口
+
+### Optional
+
+判空包装类，能够有效的处理空指针问题
+
+首先Optional有三个静态方法：ifNullable(T value)、of(T value)、empty();下面来简单说下这三个方法
+
+- ifNullable(T value)：创建一个可能为空的Optional对象，当value值不为null时，创建一个非空Optional对象。当value值为null时，会创建一个空Optional对象。
+- of(T value):创建一个非空的Optional对象，如果value为空则会报错
+- empty()：创建一个空Optional对象
+
+Optional的其他API
+
+get():获取Optional包装的值
+
+orElse(T value):如果值存在则返回Optional值，如果Optional的值不存在则获取OrElse的默认值
+
+orElseGet()：和OrElse类似
+
+isPresent(): 返回布尔类型的值，有值就为true，否则为false
+
+ifPresent(Consumer<? super T> consumer):如果Optional有值，则进行括号里的操作否则不进行
+
