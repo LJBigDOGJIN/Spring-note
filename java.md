@@ -294,13 +294,125 @@ public class LinkedList<E>
 }
 ```
 
+#### Map集合
+
+Map集合是一种K-V键值对的集合，每一个Key 对应一个Value。例如每一个学生都有一个学号ID，那么我们就可以把这个学号ID作为Map集合的key，学生的信息作为value，这样每一个ID都对应着唯一的一个学生信息。
+
+![image-20241010150518919](D:\TXT\图片文件\image-20241010150518919.png)
+
+Map集合的顶层接口Interface Map定义了一些Map集合常用的操作：
+
+```java
+//Map并不是Collection体系下的接口，而是单独的一个体系，因为操作特殊
+//这里需要填写两个泛型参数，其中K就是键的类型，V就是值的类型，比如上面的学生信息，ID一般是int，那么键就是Integer类型的，而值就是学生信息，所以说值是学生对象类型的
+public interface Map<K,V> {
+    //-------- 查询相关操作 --------
+  
+  	//获取当前存储的键值对数量
+    int size();
+
+    //是否为空
+    boolean isEmpty();
+
+    //查看Map中是否包含指定的键
+    boolean containsKey(Object key);
+
+    //查看Map中是否包含指定的值
+    boolean containsValue(Object value);
+
+    //通过给定的键，返回其映射的值
+    V get(Object key);
+    //通过给定的键，获取值，但如果不存在的话则返回给定的Value默认值
+    V getOrDefault(K key,V value);
+
+    //-------- 修改相关操作 --------
+
+    //向Map中添加新的映射关系，也就是新的键值对
+    V put(K key, V value);
+    //向Map中添加新元素，如果被添加的元素的key在原来的集合中不存在的话就加入成功，否则不添加新元素
+    V putIfAbsent(K key,V value);
+
+    //根据给定的键，移除其映射关系，也就是移除对应的键值对
+    V remove(Object key);
 
 
+    //-------- 批量操作 --------
+
+    //将另一个Map中的所有键值对添加到当前Map中
+    void putAll(Map<? extends K, ? extends V> m);
+
+    //清空整个Map
+    void clear();
 
 
+    //-------- 其他视图操作 --------
 
+    //返回Map中存放的所有键，以Set形式返回
+    Set<K> keySet();
 
+    //返回Map中存放的所有值
+    Collection<V> values();
 
+    //返回所有的键值对，这里用的是内部类Entry在表示
+    Set<Map.Entry<K, V>> entrySet();
+
+    //这个是内部接口Entry，表示一个键值对
+    interface Entry<K,V> {
+        //获取键值对的键
+        K getKey();
+
+        //获取键值对的值
+        V getValue();
+
+        //修改键值对的值
+        V setValue(V value);
+
+        //判断两个键值对是否相等
+        boolean equals(Object o);
+
+        //返回当前键值对的哈希值
+        int hashCode();
+
+        ...
+    }
+
+    ...
+}
+```
+
+在Map集合中，key是唯一的，即使value值不同，如何添加两个相同的key，那么后添加的key的Value会覆盖掉第一次添加的Value值。
+
+##### HashMap
+
+HashMap 的底层采用Hash表实现，我们在向HashMap 中添加元素的顺序并不一定是元素在集合内的实际顺序。HashMap在map的基础上做了扩充，支持自动扩容，而且还在jdk1.8以后引入了红黑树，提高了查询效率
+
+```java
+public class HashMap<K,V> extends AbstractMap<K,V>
+    implements Map<K,V>, Cloneable, Serializable {
+  
+  	...
+    
+  	static class Node<K,V> implements Map.Entry<K,V> {   //内部使用结点，实际上就是存放的映射关系
+        final int hash;
+        final K key;   //跟我们之前不一样，我们之前一个结点只有键，而这里的结点既存放键也存放值，当然计算哈希还是使用键
+        V value;
+        Node<K,V> next;
+				...
+    }
+  	
+  	...
+  
+  	transient Node<K,V>[] table;   //这个就是哈希表本体了，可以看到跟我们之前的写法是一样的，也是头结点数组，只不过HashMap中没有设计头结点（相当于没有头结点的链表）
+  
+  	final float loadFactor;   //负载因子，这个东西决定了HashMap的扩容效果
+  
+  	public HashMap() {
+        this.loadFactor = DEFAULT_LOAD_FACTOR; //当我们创建对象时，会使用默认的负载因子，值为0.75
+    }
+  
+  	...     
+}
+```
 
 ​	插入过程：
 
@@ -308,11 +420,118 @@ public class LinkedList<E>
 >
 > 2、计算hash值，查找结点位置
 >
-> 3、判断该位置是否有元素，判断是否出现hash碰撞，遍历链表，若key值相同，则直接覆盖原值，若key值不同则在链表尾部添加元素（1.8以后都是尾插法）
+> 3、判断该位置是否有元素，判断是否出现hash碰撞，遍历链表，若key值相同，则直接覆盖原值，若key值不同则在链表尾部添加元素（1.8以后都是尾插法，因为在多线程的环境下头插法容易出现回路）
 >
 > 4、添加完元素后判断链表是否需要转为红黑树（链表长度大于8，节点个数大于64），判断是否需要扩容（节点数是否大于阈值，此处要扯到负载因子，hashmap的负载因子默认是0.75f，阈值=负载因子*hashMap的容量，此处HashMap的容量可以自己设置，但是真实容量为大于设置值的最小2的指数次方）
 
-红黑树转化、退化成链表、扩容的条件需要记忆。
+> [!NOTE]
+>
+> 红黑树转化、退化成链表、扩容的条件需要记忆。
+
+因为HashMap的元素是无序的，所以如果对插入顺序有需求的话可以使用LinkedHashMap，其是基于双向链表实现的Map集合，其他特点和HashMap无太大区别。
+
+HashMap的put方法：
+
+```java
+//这块代码还是比较重要的哈哈哈哈
+public V put(K key, V value) {
+  	//这里计算完键的哈希值之后，调用的另一个方法进行映射关系存放
+    return putVal(hash(key), key, value, false, true);
+}
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node<K,V>[] tab; Node<K,V> p; int n, i;
+    if ((tab = table) == null || (n = tab.length) == 0)  //如果底层哈希表没初始化，先初始化
+        n = (tab = resize()).length;   //通过resize方法初始化底层哈希表，初始容量为16，后续会根据情况扩容，底层哈希表的长度永远是2的n次方 
+  	//因为传入的哈希值可能会很大，这里同样是进行取余操作
+  	//(n - 1) & hash 等价于 hash % n 这里的i就是最终得到的下标位置了
+    if ((p = tab[i = (n - 1) & hash]) == null)
+        tab[i] = newNode(hash, key, value, null);   //如果这个位置上什么都没有，那就直接放一个新的结点
+    else {   //这种情况就是哈希冲突了
+        Node<K,V> e; K k;
+        if (p.hash == hash &&   //如果上来第一个结点的键的哈希值跟当前插入的键的哈希值相同，键也相同，说明已经存放了相同键的键值对了，那就执行覆盖操作
+            ((k = p.key) == key || (key != null && key.equals(k))))
+            e = p;   //这里直接将待插入结点等于原本冲突的结点，一会直接覆盖
+        else if (p instanceof TreeNode)   //如果第一个结点是TreeNode类型的，说明这个链表已经升级为红黑树了
+            e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);  //在红黑树中插入新的结点
+        else {
+            for (int binCount = 0; ; ++binCount) {  //普通链表就直接在链表尾部插入
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);  //找到尾部，直接创建新的结点连在后面
+                    if (binCount >= TREEIFY_THRESHOLD - 1) //如果当前链表的长度已经很长了，达到了阈值
+                        treeifyBin(tab, hash);			//那么就转换为红黑树来存放
+                    break;   //直接结束
+                }
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))  //同样的，如果在向下找的过程中发现已经存在相同键的键值对了，直接结束，让p等于e一会覆盖就行了
+                    break;
+                p = e;
+            }
+        }
+        if (e != null) { // 如果e不为空，只有可能是前面出现了相同键的情况，其他情况e都是null，所有直接覆盖就行
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            return oldValue;   //覆盖之后，会返回原本的被覆盖值
+        }
+    }
+    ++modCount;
+    if (++size > threshold)   //键值对size计数自增，如果超过阈值，会对底层哈希表数组进行扩容
+        resize();   //调用resize进行扩容
+    afterNodeInsertion(evict);
+    return null;  //正常插入键值对返回值为null
+}
+```
+
+当节点数超过规定的阈值时会通过revise()方法进行扩容操作
+
+```java
+final Node<K,V>[] resize() {
+    Node<K,V>[] oldTab = table;   //先把下面这几个旧的东西保存一下
+    int oldCap = (oldTab == null) ? 0 : oldTab.length;
+    int oldThr = threshold;
+    int newCap, newThr = 0;  //这些是新的容量和扩容阈值
+    if (oldCap > 0) {  //如果旧容量大于0，那么就开始扩容
+        if (oldCap >= MAXIMUM_CAPACITY) {  //如果旧的容量已经大于最大限制了，那么直接给到 Integer.MAX_VALUE
+            threshold = Integer.MAX_VALUE;
+            return oldTab;  //这种情况不用扩了
+        }
+        else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                 oldCap >= DEFAULT_INITIAL_CAPACITY)   //新的容量等于旧容量的2倍，同样不能超过最大值
+            newThr = oldThr << 1; //新的阈值也提升到原来的两倍
+    }
+    else if (oldThr > 0) // 旧容量不大于0只可能是还没初始化，这个时候如果阈值大于0，直接将新的容量变成旧的阈值
+        newCap = oldThr;
+    else {               // 默认情况下阈值也是0，也就是我们刚刚无参new出来的时候
+        newCap = DEFAULT_INITIAL_CAPACITY;   //新的容量直接等于默认容量16
+        newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY); //阈值为负载因子乘以默认容量，负载因子默认为0.75，也就是说只要整个哈希表用了75%的容量，那么就进行扩容，至于为什么默认是0.75，原因很多，这里就不解释了，反正作为新手，这些都是大佬写出来的，我们用就完事。
+    }
+    ...
+    threshold = newThr;
+    @SuppressWarnings({"rawtypes","unchecked"})
+    Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+    table = newTab;   //将底层数组变成新的扩容之后的数组
+    if (oldTab != null) {  //如果旧的数组不为空，那么还需要将旧的数组中所有元素全部搬到新的里面去
+      	...   //详细过程就不介绍了
+    }
+}
+```
+
+##### TreeMap
+
+TreeMap是一种能够按照某种规则对插入元素进行排序的一种Map集合，在创建集合时给其一定的排序规则，这样插入进去的元素都是按规则排好序的。
+
+```java
+public static void main(String[] args) {
+    Map<Integer , String> map = new TreeMap<>((a, b) -> b - a);
+    map.put(0, "单走");
+    map.put(1, "一个六");
+    map.put(3, "**");
+    System.out.println(map);
+}
+```
 
 线程安全的map：
 
@@ -323,6 +542,86 @@ public class LinkedList<E>
   1.7及以前都是采用分段锁机制来提高并发性能，每个segment加一个同步锁，不同segment之间不受影响
 
   1.8以后采用了更细的锁粒度，链表的每个bucket桶加一把锁（即数组的每一个节点都有一把锁，当对不同节点的链表进行写操作时互不影响。）
+
+#### Set集合
+
+Set集合的顶层接口也是Collection，下面看一下其中怎么定义的set相关的方法：
+
+```java
+public interface Set<E> extends Collection<E> {
+    // Set集合中基本都是从Collection直接继承过来的方法，只不过对这些方法有更加特殊的定义
+    int size();
+    boolean isEmpty();
+    boolean contains(Object o);
+    Iterator<E> iterator();
+    Object[] toArray();
+    <T> T[] toArray(T[] a);
+
+    //添加元素只有在当前Set集合中不存在此元素时才会成功，如果插入重复元素，那么会失败
+    boolean add(E e);
+
+    //这个同样是删除指定元素
+    boolean remove(Object o);
+    //判断是否包含参数集合内的所有元素
+    boolean containsAll(Collection<?> c);
+
+    //同样是只能插入那些不重复的元素
+    boolean addAll(Collection<? extends E> c);
+  
+    boolean retainAll(Collection<?> c);
+    boolean removeAll(Collection<?> c);
+    void clear();
+    boolean equals(Object o);
+    int hashCode();
+
+    //这个方法我们同样会放到多线程中进行介绍
+    @Override
+    default Spliterator<E> spliterator() {
+        return Spliterators.spliterator(this, Spliterator.DISTINCT);
+    }
+}
+```
+
+可以看出，set集合不允许有重复的元素出现，没有下标，不支持随机访问。
+
+##### HashSet
+
+在看HashSet之前建议先去看Map集合（HashMap），因为在HashSet主要就是依靠HashMap来实现，在HashSet中维护了一个HashMap集合，相当于我们往HashSet中存储的元素都是存在HashMap的key上，而Value会默认存一个Object对象，相当于一个占位符，并没有其他作用。(通过下面的代码可以看出，其实大部分操作还是调用的其内部HashMap的方法，HashSet就是套壳HashMap)
+
+```java
+public class HashSet<E>
+    extends AbstractSet<E>
+    implements Set<E>, Cloneable, java.io.Serializable
+{
+
+    private transient HashMap<E,Object> map;   //对，你没看错，底层直接用map来做事
+
+    // 因为Set只需要存储Key就行了，所以说这个对象当做每一个键值对的共享Value
+    private static final Object PRESENT = new Object();
+
+    //直接构造一个默认大小为16负载因子0.75的HashMap
+    public HashSet() {
+        map = new HashMap<>();
+    }
+		
+  	...
+      
+    //你会发现所有的方法全是替身攻击
+    public Iterator<E> iterator() {
+        return map.keySet().iterator();
+    }
+
+    public int size() {
+        return map.size();
+    }
+
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+}
+```
+
+
 
 ### 常用日期时间类
 
