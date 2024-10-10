@@ -290,7 +290,6 @@ public class LinkedList<E>
             this.prev = prev;
         }
     }
-
     ...
 }
 ```
