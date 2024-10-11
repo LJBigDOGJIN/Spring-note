@@ -60,3 +60,10 @@ git fetch 拉取远程仓库最新代码，不会自动merge
 删除的文件如何恢复？
 
 一种说法是 用   **git checkout 文件名**   的形式，当checkout后面跟的是分支名时，会切换到该分支，如果后面跟的是文件名时，则会在.git目录中复制一份该文件存到工作目录中。
+
+
+
+> [!NOTE]
+>
+> https://git-scm.com/book/zh/v2/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E6%96%B0%E5%BB%BA%E4%B8%8E%E5%90%88%E5%B9%B6
+
