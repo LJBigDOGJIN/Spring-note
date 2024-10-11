@@ -454,6 +454,28 @@ Group by  按一列或者多列进行分组
 
 还能为分组后的每一组结果根据某一列进行排序
 
+group by 还可以根据多列来进行分组，当根据多列分组时只有几列相同时才会被分为一组，举个例子，如下图表所示：
+
+![image-20240924144012653](D:\TXT\图片文件\image-20240924144012653.png)
+
+可以看到李少华的名字出现三次，但是性别这列可以看出来李少华有一个男的个一个女的，显然是两个人，但是当我们分组时如果只按name分，那么就会将这重名的两人混在一起，如下:
+
+```sql
+select sum(score) SumGrade from user group by name;
+```
+
+结果：![image-20240924145054991](D:\TXT\图片文件\image-20240924145054991.png)
+
+此时为了区分重名的两人，应该再加一列sex分组条件，此时只有name和sex相等时才会被分为一组，具体如下：
+
+```sql
+select sum(score) SumGrade from user group by name,sex;
+```
+
+此时是正确的结果：
+
+![image-20240924145413551](D:\TXT\图片文件\image-20240924145413551.png)
+
 ```sql
 -- 分组
 SELECT cust_name, COUNT(cust_address) AS addr_num
@@ -464,7 +486,7 @@ FROM Customers GROUP BY cust_name;
 
 ```
 
-having
+###### having
 
 相当与sql的where ，不过having只能配合group by使用，且在group by 后面的子句中使用，where在group by之前使用，having能使用聚合函数
 
