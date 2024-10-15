@@ -42,16 +42,23 @@ git fetch 拉取远程仓库最新代码，不会自动merge
 
 添加到本地仓库 git commit -m "这里填一些简要信息，比如说这次提交改动了什么"
 
-![image-20240919150139952](D:\TXT\图片文件\image-20240919150139952.png)
+![image-20240919150139952](D:\Record\Spring-note\图片文件\image-20240919150139952.png)
 
 提交到主分支 git push 远程仓库名 分支名
 
 提交分支后合并到主分支 
 
 1. 切换分支  **git checkout 分支名**
+
 2. 合并到主分支 **git merge master** 
+
 3. 合并完成后删除分支 **git branch -d** 分支名 
+
 4. **git push** 远程仓库名 分支名字
+
+   > ``` powershell
+   > 强制提交: git push -u origin master -f //会导致远程修改丢失
+   > ```
 
 删除文件
 
