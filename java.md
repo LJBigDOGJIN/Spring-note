@@ -625,7 +625,7 @@ public class HashSet<E>
 
 ### 常用日期时间类
 
-Calendar 日期类
+##### Calendar 日期类
 
  Calendar是一个日期抽象类，可以进行日期运算，由于其是一个抽象类，所以在使用时我们可以使用他的子类GregorianCalendar类，可以通过直接new GregorianCalendar() 的方式，也可以使用Calendar的静态方法getInstance来获取GregorianCalendar类对象。
 
@@ -645,7 +645,7 @@ Calendar.SECOND:秒
 Calendar.DAY_OF_WEEK:星期 // 提供的值为1-7，但1-7分别代表的是周日到周六，使用时需要注意
 ```
 
-SimpleDateFormat类
+##### SimpleDateFormat类
 
 可以将Date类型按照指定格式转为String类型，也可以将String类型的时间解析为Date类型
 
@@ -722,7 +722,7 @@ sleep方法和wait方法的区别
 2. 调用wait让获得对象锁的线程实现等待会释放锁，sleep不会
 3. sleep方法是暂停执行，能自己恢复，而wait需要被notify或者notifyall方法唤醒
 
-多线程
+##### 多线程
 
 并发和并行的区别
 
@@ -777,7 +777,7 @@ volatile应用例子：单例模式的双重检查锁
 
 如果版本号不一致则提交修改失败，说明该值在提交之前已被其他线程修改
 
-CAS算法：
+###### CAS算法：
 
 cas算法中有三个值 ：V(要更新的变量值（原值)）、E（预期原值）、N（将要写入更新的值）
 
@@ -882,7 +882,7 @@ java SoftReference<?> m = new SoftReference<?>(new ?)
 
 
 
-线程池
+#### 线程池
 
 优点：1、提高运行效率，不需要再创建线程
 
