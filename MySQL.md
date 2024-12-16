@@ -1,6 +1,6 @@
 #### 什么是数据库
 
-不知道，数据库应该就是存一堆数据信息的集合。
+数据库就是存一堆数据信息的集合。
 
 什么是E-R图
 
@@ -131,7 +131,7 @@ NULL会影响聚合函数的使用，SUM、AVG、MIN、MAX不会统计null值，
 
 #### MYSQL存储引擎
 
-我比较常见的存储引擎又innodb，myisam，MYSQL默认使用的是INNODB，下面这张图还有其他存储引擎
+我比较常见的存储引擎有innodb，myisam。MYSQL默认使用的是INNODB，下面这张图还有其他存储引擎
 
 ![image-20240906131030060](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240906131030060.png)
 
@@ -275,6 +275,44 @@ mysql> EXPLAIN SELECT `score`,`name` FROM `cus_order` ORDER BY `score` DESC;
 ```
 
 ![image-20240909165814170](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20240909165814170.png)
+
+
+
+##### 查看执行计划
+
+id：如果id值相等则从上往下依次执行，如果id值不等，则id值越大则执行的优先级越高，如果行引用其他行的并集结果，则该值可以为 NULL。
+
+select_type：查询类型，用于区分普通查询，联合查询，子查询等复杂的查询
+
+> - simple:简单查询,不包含union或子查询
+> - primary:若查询中包含子查询或其他部分,外层的select将被标记为primary
+> - subquery:子查询中第一个select
+> - union:在union语句中,union后出现的语句
+> - derived:在from中出现的子查询将被标记为derived
+> - union result:union查询的结果
+
+table:查询用到的表名,除了正常的表名,也可以是以下值
+
+> - <unionM,N>:表示本行引用了id为M,N行的UNION的结果集
+> - <derivedN>:表示本行引用了id为N的表所产生的派生表的结果,派生表有可能产自FROM子句中的子查询
+> - <subqueryN>:表示本行引用了id为N的表所产生的物化子查询结果(不清楚啥意思)
+
+type:查询执行的类型,从最优到最差的顺序为
+
+system > const > eq_ref > ref > fulltext > ref_or_null > index_merge > unique_subquery > index_subquery > range > index > ALL
+
+各种类型的具体含义如下
+
+> - system: 如果表所使用的引擎对于表行数统计是精确的,并且表中只有一条记录的情况下是system类型的查询
+> - const:表中只有一条符合条件的数据记录,一次查询就可以找到,常用于使用主键或唯一索引的字段作为查询条件
+> - eq_ref:当联表查询时,前面一张表的行在当前表只有一行数据与之对应
+> - ref:使用普通索引查询结果时,可能找到多个符合条件的行
+> - index_merge:当查询条件用到了多个索引时,表示开启了index merge 优化
+> - range:对索引列进行范围查询时,执行计划中的key表示哪个索引被使用
+> - index:查询遍历了整棵树的索引,和all类似,但index 扫描的时索引,所以速度要快很多
+> - all:全盘扫描
+
+
 
 ##### sql优化
 
@@ -845,7 +883,7 @@ alter table user drop primary key;
 
 视图是一种虚拟表，无法建立使用索引，操作和普通表一样。
 
-视图能起到简化操作的作用，避免复杂的链表查询
+视图能起到简化操作的作用，避免复杂的联表查询
 
 视图只提供一部分数据，且能够限制用户只读的权限，保证数据安全性
 
