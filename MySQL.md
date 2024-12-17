@@ -946,3 +946,13 @@ create unique index user_index on user(id)
 alter table user drop index user_index;
 ```
 
+
+
+
+
+#### MVCC
+
+MVCC（Multi-Version Concurrency Control）:多版本并发控制
+
+
+
