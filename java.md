@@ -1,5 +1,51 @@
 GitHub：
 
+### 基本概念
+
+#### Java中的值传递
+
+在Java中只有值传递的概念，不存在引用传递。当一个函数接收参数时，如果传过来的是基本数据类型，那么函数的形参就是传入实参的拷贝，在函数内对形参进行操作并不会影响原值。当传入的实参为引用数据类型时，形参接收到的是该引用实参的地址拷贝值（就是讲这个引用对象在堆中的地址值复制一份给形参），在操作引用对象时，由于原值和拷贝值都指向堆中的同一个对象，所以会导致原来的对象可能发生变化。下面贴几段代码便于理解：
+
+- 传递基本数据类型
+
+```java
+public static void main(String[] args) {
+    int num1 = 10;
+    int num2 = 20;
+    swap(num1, num2);
+    System.out.println("num1 = " + num1);
+    System.out.println("num2 = " + num2);
+}
+
+public static void swap(int a, int b) {
+    int temp = a;
+    a = b;
+    b = temp;
+    System.out.println("a = " + a);
+    System.out.println("b = " + b);
+}
+```
+
+![image-20241025101341757](D:\TXT\图片文件\image-20241025101341757.png)
+
+- 传递引用数据类型
+
+```java
+  public static void main(String[] args) {
+      int[] arr = { 1, 2, 3, 4, 5 };
+      System.out.println(arr[0]);
+      change(arr);
+      System.out.println(arr[0]);
+  }
+
+  public static void change(int[] array) {
+      // 将数组的第一个元素变为0
+      array[0] = 0;
+  }
+```
+
+![image-20241025102729585](D:\TXT\图片文件\image-20241025102729585.png)
+
 ### 集合
 
 Collection定义了一些集合类长用的方法
