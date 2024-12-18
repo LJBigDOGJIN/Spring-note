@@ -952,7 +952,71 @@ alter table user drop index user_index;
 
 #### MVCC
 
-MVCC（Multi-Version Concurrency Control）:多版本并发控制
+MVCC（Multi-Version Concurrency Control）:多版本并发控制，mvcc是一种并发控制机制，用来保证多个事务独写数据时的一致性和隔离性，是通过在每个数据行上维护多个版本来实现的，当事务修改数据时，是直接创建一个数据快照，而不是直接修改原数据。
+
+- 读操作
+
+查询语句一般都是快照读（快照就相当于数据行的一个历史版本，可能有多个历史版本，但是数据库会定时的清理不常用的历史快照），当一个数据有多个快照版本时，会读取不超过当前事务时间的最新的一条快照数据。
+
+- 写操作
+
+进行写操作时，事务会创建一个新版本，将修改的数据写入新版本后保存在数据库中，新版本的数据携带着当前事务的版本号，方便其他事务独写。历史数据仍然存在供其他事务快照读
+
+怎么实现的？
+
+mvcc的实现依赖于隐藏字段、read view和 undo log。Innodb通过数据行的db_trx_id和read view 来判断数据是否可见，若不可见则通过undo log 来找到过往历史版本，在同一个事务中，用户只能看到事务创建read view之前已经提交的修改或事务本身做的修改
+
+**隐藏字段**
+
+db_trx_id:表示最后一次操作该行数据的事务id。
+
+db_roll_ptr：回滚指针，指向改行的undo log。如果数据从未被修改过，则为空
+
+db_row_id:如果该表没有主键或者唯一非空索引时，innodb会使用row_id来生成索引
 
 
 
+Read View
+
+> ```
+> class ReadView {  
+> /* ... */
+> private:  
+> trx_id_t m_low_limit_id;     /* 大于等于这个 ID 的事务均不可见 */  
+> trx_id_t m_up_limit_id;       /* 小于这个 ID 的事务均可见 */      
+> trx_id_t m_creator_trx_id;    /* 创建该 Read View 的事务ID */    
+> trx_id_t m_low_limit_no;      /* 事务 Number, 小于该 Number 的 Undo Logs 均可以被 Purge */  
+> ids_t m_ids;                  /* 创建 Read View 时的活跃事务列表 */  
+> m_closed;                     /* 标记 Read View 是否 close */
+> }
+> ```
+
+![image-20241218144746165](D:\TXT\图片文件\image-20241218144746165.png)
+
+undo log
+
+undo log 有两种用途，一是将数据回滚到修改之前的状态，二是当读数据时如果当前行被占用或者对该事务不可见时，可以通过undo log来读取快照数据。
+
+在innodb中 undo log 分为两种，insert undo log 和 update undo log。
+
+insert undo log ：insert  过程中产生的undo log，由于insert操作只对当前事务可见，对其他事务不可见。所以在事务结束之后产生的undo log可以直接删除
+
+而update undo log 是在delete 和update过程中产生的undo log ，且关系到MVCC机制，所以在事务完成之后不能直接删除。当事务提交之后放入undo log 链表（每次新修改的数据版本都指向上一个版本，所以链首的数据就是最新的数据，链尾的数据是最老的数据），等待purge线程进行最后的删除操作。
+
+![image-20241218151050971](D:\TXT\图片文件\image-20241218151050971.png)
+
+![image-20241218155548819](D:\TXT\图片文件\image-20241218155548819.png)
+
+**RC和RR隔离级别下MVCC的差异**
+
+RC和RR两种隔离级别在多版本控制机制中的差异主要体现在Read View 的生成时机上。
+
+RC隔离级别是每次在select前都会重新生成新的Read View（m_ids列表）
+
+RR隔离级别下是在一个事务中只有在第一次select前才会生成Read View（m_ids列表），
+
+如下图是一个多事务读写的例子：
+
+> 初始数据是 name='菜花'
+
+![image-20241218165912594](D:\TXT\图片文件\image-20241218165912594.png)
