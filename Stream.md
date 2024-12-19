@@ -14,6 +14,10 @@ Stream Java8引入的新特性，能够对集合和数组进行操作
 
 
 
+> 1、中间方法，返回新的Stream流，原来的Stream流只能使用一次，所以建议使用链式编程
+>
+> 2、修改Stream流中的数据，不会影响原来集合或者数组中的数据
+
 流的使用
 
 1. 获取顺序流
@@ -55,8 +59,26 @@ List<String> list = new ArrayList<>();
 > limit(long maxSize)：截取流中的前maxSize个元素。
 > skip(long n)：跳过流中的前n个元素。
 > sorted()：对流中的元素进行排序。
-> distinct()：去重，去除流中重复的元素。
+> distinct()：去重，去除流中重复的元素。（底层通过hashcode和equals方法实现
 > forEach(Consumer<T> action)：对流中的每个元素执行指定的操作。
 > reduce(T identity, BinaryOperator<T> accumulator)：将流中的元素按照指定的方式进行累加，返回一个Optional对象。
 > collect(Collector<T, A, R> collector)：将流中的元素收集到一个集合中。
 > concat 合并a和b两个流为一个流。
+
+流的使用步骤：
+
+1. 先得到一条Stream流，并把数据放上去。
+
+   - 单列集合:Collection中的默认方法
+
+     ```java
+     list.stream();
+     ```
+   
+     
+   
+   - 双列集合：必须先转成单列集合才能使用Stream流
+   
+   - 数组：Arrays的stream方法
+   
+   
