@@ -119,3 +119,22 @@ git branch -m <旧分支名> <新分支名>
 
 
 
+tip：使用代理时，电脑的端口号可能与git的端口不一致，从而导致连接不上远程仓库
+
+可以在电脑设置---》网络---》代理中查看代理的端口号，
+
+通过以下命令来设置git代理端口号：
+
+```shell
+//我的代理端口号是7890 如有有其他的记得更换
+git config --global http.proxy 127.0.0.1:7890
+git config --global https.proxy 127.0.0.1:7890
+```
+
+不适用代理时取消设置：
+
+```shell
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
