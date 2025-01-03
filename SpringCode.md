@@ -283,7 +283,9 @@ spring扫描入口
 
 - proxyMode
 
-- ExcludeFilter：排除果滤器 
+  可以批量的设置生成代理对象的方式，CGLIB动态代理或者JDK动态代理等等。
+
+- ExcludeFilter：排除过滤器 
 
   > 在@Component注解扫描时，可以使用excludeFilters属性来排除一些不想加载的文件
   >
@@ -299,10 +301,14 @@ spring扫描入口
 
   > 配置为true后 ，扫描加载的bean都是懒加载的，如果自己单独在bean上配置了其他方式，那么遵循就近原则
 
+@Lookup注解
 
+lookup注解的作用是如果当前类中有方法上使用了该注解，那么会给当前类生成一个代理对象，但是被lookup注解标注的方法体并不会被执行，而是lookup参数中我们可以指定一个bean 的名称，将该bean赋给使用lookup注解方法的
 
 ASM机制
 
  先读出所有的.class文件 ：
 
 ASM下有一个ClassReader类能够解析对应的类
+
+独立类 ，抽象类和接口
